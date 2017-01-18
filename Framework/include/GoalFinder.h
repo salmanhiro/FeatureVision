@@ -119,6 +119,7 @@ namespace Robot {
 			void CalculateVarianceV();
 			void ClassifyLineRL();
 			void CalculateMeanRL();
+			void DrawLine(Mat image, float r_draw, float t_draw);
 			/////////////////////////
 
 			float DegreesToRadians(float degrees);

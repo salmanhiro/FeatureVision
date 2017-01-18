@@ -134,7 +134,8 @@ void GoalFinder::Process(Mat image)
         printf("░░░░░░░░░░░░░░░░░░░░░░░░\n");
 
         ClassifyLineHV(rho,RadiansToDegrees(theta));
-        
+        CalculateMeanH();
+    	DrawLine(image, r_mean_h, teta_mean_h);    
         double degtheta = RadiansToDegrees(theta);
         printf("DEGTHETA:%f\n",degtheta);
         if((degtheta >= 45 && degtheta < 135)||(degtheta >= 225 && degtheta < 315)) //revisi 1
@@ -181,17 +182,26 @@ void GoalFinder::Process(Mat image)
         }
     }
 */
-    CalculateMeanH();
-    CalculateMeanV();
-    CalculateVarianceV();
-    ClassifyLineRL();
-    CalculateMeanRL();
-
+    
+    //CalculateMeanV();
+    //CalculateVarianceV();
+    //ClassifyLineRL();
+    //printf("RIGHT : %d, LEFT : %d",right_post.size, left_post.size);
+    //CalculateMeanRL();
+/*
+    for( size_t i = 0; i < right_post.size(); i++ )
+    {
+    	float rp_H = right_post[i][0], tp_H = right_post[i][1];
+    	printf("R:%f, T:%f\n",rp_H, tp_H);
+    }
+*/
+    
+/*
     //Draw
   	DrawLine(image, r_mean_h, teta_mean_h);
   	DrawLine(image, r_mean_right, teta_mean_right);
   	DrawLine(image, r_mean_left, teta_mean_left);  
-
+*/
     printf("h:%d, r:%d, l:%d\n", h, r, l);
 
     cvtColor(edge,drawing,CV_GRAY2BGR);
@@ -398,7 +408,8 @@ void GoalFinder::CalculateMeanH()
         teta_sum_cos += cos(horizontal[i][1]);
     }
     r_mean_h = r_sum / horizontal.size();
-    teta_mean_h = atan2(teta_sum_sin/2,teta_sum_cos/2)/PI*180;
+    teta_mean_h = atan2(teta_sum_sin/2,teta_sum_cos/2)/*/PI*180*/;
+    printf("RHO:%d, THETHA:%f\n",r_mean_h,teta_mean_h);
 }
 
 void GoalFinder::CalculateMeanV()
@@ -431,10 +442,15 @@ void GoalFinder::ClassifyLineRL()
 {
     for( size_t i = 0; i < vertical.size(); i++ )
     {
-        if((int)vertical[i][0] > r_mean_v)
+        if((int)vertical[i][0] > r_mean_v) {
             right_post.push_back(i);
+        	printf("RIGHTTTTTTTTTT\n");
+        }
         else
+        {
             left_post.push_back(i);
+    		printf("LEFTTTTTTTTTTT\n");
+    	}
     }
 }
 
@@ -449,8 +465,9 @@ void GoalFinder::CalculateMeanRL()
         r_sum += (int)vertical[i][0];
         teta_sum_sin += sin(vertical[i][1]);
         teta_sum_cos += cos(vertical[i][1]);
+        printf("BUG RIGHT\n");
     }
-    r_mean_right = r_sum / right_post.size();
+    //r_mean_right = r_sum / right_post.size();
     teta_mean_right = atan2(teta_sum_sin/2,teta_sum_cos/2)/PI*180;
 
     r_sum = 0;
@@ -462,8 +479,9 @@ void GoalFinder::CalculateMeanRL()
         r_sum += (int)vertical[i][0];
         teta_sum_sin += sin(vertical[i][1]);
         teta_sum_cos += cos(vertical[i][1]);
+    	//printf("BUG LEFT\n");
     }
-    r_mean_left = r_sum / left_post.size();
+    //r_mean_left = r_sum / left_post.size();
     teta_mean_left = atan2(teta_sum_sin/2,teta_sum_cos/2)/PI*180;
 }
 
@@ -512,5 +530,5 @@ void GoalFinder::DrawLine(Mat image, float r_draw, float t_draw) {
     p1.y = cvRound(y0 + 1000*(a));
     p2.x = cvRound(x0 - 1000*(-b));
     p2.y = cvRound(y0 - 1000*(a));
-    line(image, p1, p2, Scalar(255,255,255), 3, CV_AA);
+    line(image, p1, p2, Scalar(0,0,0), 3, CV_AA);
 }

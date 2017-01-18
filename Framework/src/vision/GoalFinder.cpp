@@ -181,7 +181,16 @@ void GoalFinder::Process(Mat image)
         }
     }
 */
-    
+    CalculateMeanH();
+    CalculateMeanV();
+    CalculateVarianceV();
+    ClassifyLineRL();
+    CalculateMeanRL();
+
+    //Draw
+  	DrawLine(image, r_mean_h, teta_mean_h);
+  	DrawLine(image, r_mean_right, teta_mean_right);
+  	DrawLine(image, r_mean_left, teta_mean_left);  
 
     printf("h:%d, r:%d, l:%d\n", h, r, l);
 
@@ -229,8 +238,8 @@ void GoalFinder::Process(Mat image)
         line(drawing, draw_R1, draw_R2, Scalar(255,255,0), 2, CV_AA);
     }
      
-    //circle(drawing, CalculateIntersection(rho_h, theta_h, rho_r, theta_r), 5,  Scalar(0,255,255), 5, 8, 0 );
-    //circle(drawing, CalculateIntersection(rho_h, theta_h, rho_l, theta_l), 5,  Scalar(0,255,255), 5, 8, 0 );
+    //circle(drawing, CalculateIntersection(rho_h, RadiansToDegrees(theta_h), rho_r, RadiansToDegrees(theta_r), 5,  Scalar(0,255,255), 5, 8, 0 );
+    //circle(drawing, CalculateIntersection(rho_h, RadiansToDegrees(theta_h), rho_l, RadiansToDegrees(theta_l), 5,  Scalar(0,255,255), 5, 8, 0 );
 
  
 	printParam();
@@ -435,7 +444,7 @@ void GoalFinder::CalculateMeanRL()
     float teta_sum_sin = 0;
     float teta_sum_cos = 0;
 
-    for( size_t i = 0; i < vertical.size(); i++ )
+    for( size_t i = 0; i < right_post.size(); i++ )
     {
         r_sum += (int)vertical[i][0];
         teta_sum_sin += sin(vertical[i][1]);
@@ -448,7 +457,7 @@ void GoalFinder::CalculateMeanRL()
     teta_sum_sin = 0;
     teta_sum_cos = 0;
 
-    for( size_t i = 0; i < vertical.size(); i++ )
+    for( size_t i = 0; i < left_post.size(); i++ )
     {
         r_sum += (int)vertical[i][0];
         teta_sum_sin += sin(vertical[i][1]);
@@ -465,20 +474,20 @@ Point GoalFinder::CalculateIntersection(int R1, float Teta1, int R2, float Teta2
 	float point_y;
 	if((Teta1 == 90)||(Teta1 == 270)) // Straight Horizontal
 	{
-		float teta_rad_v = Teta2;
+		float teta_rad_v = DegreesToRadians(Teta2);
 		point_x = R2*cos(teta_rad_v)- R1*tan(teta_rad_v) + R2*sin(teta_rad_v)*tan(teta_rad_v) ; 
 		point_y = R1;
 	}
 	else if ((Teta2 == 0)||(Teta2 == 180)) // Straight Vertical
 	{
-		float teta_rad_h = Teta1;
+		float teta_rad_h = DegreesToRadians(Teta1);
 		point_x = R2;
 		point_y = R1*sin(teta_rad_h) - R2/tan(teta_rad_h) + R1*cos(teta_rad_h)/tan(teta_rad_h) ;
 	}
 	else
 	{
-		float teta_rad_h = Teta1;
-		float teta_rad_v = Teta2;
+		float teta_rad_h = DegreesToRadians(Teta1);
+		float teta_rad_v = DegreesToRadians(Teta2);
 		float c_vert = R2*(cos(teta_rad_v)+(sin(teta_rad_v)*tan(teta_rad_v)))/tan(teta_rad_v);
 		float c_horz = R1*(sin(teta_rad_h)+(cos(teta_rad_h)/tan(teta_rad_h))); 
 		point_x = (c_vert - c_horz)*tan(teta_rad_v)*tan(teta_rad_h)/(tan(teta_rad_h) - tan(teta_rad_v));
@@ -493,4 +502,15 @@ float GoalFinder::DegreesToRadians(float degrees){
 
 float GoalFinder::RadiansToDegrees(float radians){
     return (radians*180/PI);
+}
+
+void GoalFinder::DrawLine(Mat image, float r_draw, float t_draw) {
+    double a = cos(t_draw), b = sin(t_draw);
+    double x0 = a*r_draw, y0 = b*r_draw;
+    Point p1,p2;
+    p1.x = cvRound(x0 + 1000*(-b));
+    p1.y = cvRound(y0 + 1000*(a));
+    p2.x = cvRound(x0 - 1000*(-b));
+    p2.y = cvRound(y0 - 1000*(a));
+    line(image, p1, p2, Scalar(255,255,255), 3, CV_AA);
 }

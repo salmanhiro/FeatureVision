@@ -18,6 +18,8 @@
 #include <stdio.h>
 
 #include <string>
+#include <iostream>
+#include <vector>
 
 #include "Point.h"
 #include "minIni.h"
@@ -34,6 +36,15 @@
 using namespace cv;
 
 namespace Robot {
+	enum GoalStatus
+	{
+		C2P=1,  // Crossbar with 2 Posts
+		NC2P,   // No Crossbar with 2 Posts
+		C1P,    // Crossbar with 1 Post
+		NC1P,   // No Crossbar with 1 Post
+		CO,     // Crossbar Only
+		NL      // No Line Detected
+	};
 	class GoalFinder
 	{
 		private:
@@ -45,6 +56,8 @@ namespace Robot {
 			Mat th;
 			Mat edge;
 
+			int variansi;
+
 			static void on_trackbar(int value, void *userdata);
 			void CreateTrackbar();
 			void morphOps(Mat &thresh);
@@ -52,7 +65,26 @@ namespace Robot {
 
 		public:
 
+			enum
+			{
+				NONE,
+				UNKNOWN_POST,
+				RIGHT_POST,
+				LEFT_POST,
+				POSSIBLE_RIGHT_POST,
+				POSSIBLE_LEFT_POST,
+				BOTH_POST
+			};
+			
+			enum 
+			{
+				UNCLEAR, //belum jelas gawang siapa
+				OWN_GOAL, //gawang sendiri
+				OPPONENT_GOAL //gawang lawan
+			};
+
 			std::string color_section;
+			GoalStatus goalstate;
 
 			int min_H;
 			int max_H;
@@ -97,8 +129,6 @@ namespace Robot {
 			float rho;
 			float theta;
         	Point pt1, pt2;
-        	//double a = cos(theta), b = sin(theta);
-        	//double x0 = a*rho, y0 = b*rho;
 
 			//Corner
 			Point2D TR;
@@ -107,19 +137,26 @@ namespace Robot {
 			Point2D BL;
 			
 			void printParam();
-			void Process(Mat image);
+			void Process(Mat image, bool OppGoal);
+			void Filtering(Mat image);
 			void ControlPanel(minIni* ini);
 			void getCorner(Mat src);
-			Point CalculateIntersection(int R1, float Teta1, int R2, float Teta2);
+			
 			
 			//Belum ditest
-			void ClassifyLineHV(float r, float t);
+			void ClassifyLineHV();
 			void CalculateMeanH();
 			void CalculateMeanV();
 			void CalculateVarianceV();
 			void ClassifyLineRL();
 			void CalculateMeanRL();
+			bool ValidateH();
+  			bool ValidateV();
+  			void StateCheck();
+  			Point CalculateIntersection(int R1, float Teta1, int R2, float Teta2);
 			void DrawLine(Mat image, float r_draw, float t_draw);
+			void Reset();
+			
 			/////////////////////////
 
 			float DegreesToRadians(float degrees);

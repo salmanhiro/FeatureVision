@@ -88,10 +88,10 @@ void GoalFinder::morphOps(Mat &thresh){
         dilate(thresh, thresh, dilateElement);
 }
 
-void GoalFinder::Process(Mat image)
+void GoalFinder::Filtering(Mat image)
 {
     Mat drawing;
-   
+   	Reset();
 	//GaussianBlur( image, img, Size(3, 3), 2, 2 );
 	//GaussianBlur( img, img, Size(9, 9), 2, 2);
 	cvtColor(image,hsv,CV_BGR2HSV);
@@ -110,11 +110,12 @@ void GoalFinder::Process(Mat image)
     int h=0, l=0, r=0;
     
     HoughLines(edge, lines, 1, CV_PI/180, 220, 0, 0 );
+    printf("LINE : %d\n",lines.size());
     
     float r_sum_h=0, r_sum_l=0, r_sum_r=0;
     float theta_sum_h=0, theta_sum_l=0, theta_sum_r=0;
     float theta_h, rho_h, theta_r, rho_r, theta_l, rho_l;
-
+    //printf("\n░░░░░░░░░░░░░░░░░░░░░\n");
     for( size_t i = 0; i < lines.size(); i++ )
     {
         rho = lines[i][0]; theta = lines[i][1];//radian
@@ -126,18 +127,19 @@ void GoalFinder::Process(Mat image)
         pt2.y = cvRound(y0 - 1000*(a));
         line(image, pt1, pt2, Scalar(0,0,255), 1, CV_AA);
         
-        printf("\n░░░░░░░░░░░░░░░░░░░░░░░░\n");
-        printf("RHO:%f\n", rho );
-        printf("TETHA:%f\n", theta );
-        printf("[Titik1] X:%d, Y:%d\n", pt1.x, pt1.y);
-        printf("[Titik2] X:%d, Y:%d\n", pt2.x, pt2.y);
-        printf("░░░░░░░░░░░░░░░░░░░░░░░░\n");
+        //printf("\n░░░░░░░░░░░░░░░░░░░░░\n");
+        //printf("RHO:%f\n", rho );
+        //printf("TETHA:%f\n", theta );
+        //printf("[Titik1] X:%d, Y:%d\n", pt1.x, pt1.y);
+        //printf("[Titik2] X:%d, Y:%d\n", pt2.x, pt2.y);
+        //printf("░░░░░░░░░░░░░░░░░░░░░░░░\n");
 
-        ClassifyLineHV(rho,RadiansToDegrees(theta));
-        CalculateMeanH();
-    	DrawLine(image, r_mean_h, teta_mean_h);    
+        //ClassifyLineHV(rho,RadiansToDegrees(theta));
+        //CalculateMeanH();
+    	
         double degtheta = RadiansToDegrees(theta);
-        printf("DEGTHETA:%f\n",degtheta);
+        printf("TETHA:%f\n", degtheta );
+        //printf("DEGTHETA:%f\n",degtheta);
         if((degtheta >= 45 && degtheta < 135)||(degtheta >= 225 && degtheta < 315)) //revisi 1
         {
             h++;
@@ -169,41 +171,59 @@ void GoalFinder::Process(Mat image)
 	        	theta_sum_l += theta;
 	        }
         }
+        
 
     }
+    printf("\n░░░░░░░░░░░░░░░░░░░░░\n");
+    ClassifyLineHV();
+    if(ValidateV())
+    {
+        CalculateMeanV();
+        CalculateVarianceV();
+    }
+	ClassifyLineRL();
+	printf("Jumlah Vertikal : %d\n", vertical.size());
 /*
+	//Test isi vector Horizontal
     for( size_t i = 0; i < horizontal.size(); i++ )
     {
         float r_H = horizontal[i][0], t_H = horizontal[i][1];
-        for( size_t i = 0; i < vertical.size(); i++ )
-        {
-            float r_V = vertical[i][0], t_V = vertical[i][1];
-            printf("HORIZONTAL >> R:%f,T:%f | VERTICAL >> R:%f,T:%f\n",r_H,t_H,r_V,t_V);
-        }
+        printf("HORIZONTAL >> R:%f,T:%f\n",r_H,t_H);
     }
-*/
+
+    //Test isi vector Vertical
+    for( size_t i = 0; i < vertical.size(); i++ )
+    {
+        float r_V = vertical[i][0], t_V = vertical[i][1];
+        printf("VERTICAL >> R:%f,T:%f\n",r_V,t_V);
+    }
+
     
-    //CalculateMeanV();
-    //CalculateVarianceV();
-    //ClassifyLineRL();
-    //printf("RIGHT : %d, LEFT : %d",right_post.size, left_post.size);
-    //CalculateMeanRL();
-/*
+    //Test isi vector right_post
     for( size_t i = 0; i < right_post.size(); i++ )
     {
-    	float rp_H = right_post[i][0], tp_H = right_post[i][1];
-    	printf("R:%f, T:%f\n",rp_H, tp_H);
+    	float rp_r = right_post[i][0], tp_r = right_post[i][1];
+    	printf("R:%f, T:%f\n",rp_r, tp_r);
     }
 */
-    
+
+    //Test isi vector left_post
+    /*
+    for( size_t i = 0; i < left_post.size(); i++ )
+    {
+    	float rp_l = left_post[i][0], tp_l = left_post[i][1];
+    	printf("R:%f, T:%f\n",rp_l, tp_l);
+    }
+    */
+  
 /*
     //Draw
   	DrawLine(image, r_mean_h, teta_mean_h);
   	DrawLine(image, r_mean_right, teta_mean_right);
   	DrawLine(image, r_mean_left, teta_mean_left);  
 */
-    printf("h:%d, r:%d, l:%d\n", h, r, l);
-
+    //printf("h:%d, r:%d, l:%d\n", h, r, l);
+/*
     cvtColor(edge,drawing,CV_GRAY2BGR);
     GaussianBlur(drawing, drawing, Size(5, 5), 2, 2);
     if(h > 0)
@@ -247,21 +267,22 @@ void GoalFinder::Process(Mat image)
         printf("R:%d\n", r);
         line(drawing, draw_R1, draw_R2, Scalar(255,255,0), 2, CV_AA);
     }
+ */
      
     //circle(drawing, CalculateIntersection(rho_h, RadiansToDegrees(theta_h), rho_r, RadiansToDegrees(theta_r), 5,  Scalar(0,255,255), 5, 8, 0 );
     //circle(drawing, CalculateIntersection(rho_h, RadiansToDegrees(theta_h), rho_l, RadiansToDegrees(theta_l), 5,  Scalar(0,255,255), 5, 8, 0 );
 
  
-	printParam();
+	//printParam();
     //getCorner(drawing);
-    
+    waitKey(30);
 	
     
 	namedWindow("Image", CV_WINDOW_NORMAL);
 	imshow( "Image", image );
 
-	namedWindow("drawing", CV_WINDOW_NORMAL);
-	imshow( "drawing", drawing );
+	//namedWindow("drawing", CV_WINDOW_NORMAL);
+	//imshow( "drawing", drawing );
 	
 }
 
@@ -374,26 +395,32 @@ void GoalFinder::getCorner(Mat src)
         }
     }
 
-    //RUMUS garis tengah berdasar corner atas
-    //X = (X1+X2)/2 >> P1(X,Y), P2(X,-Y)
-    // Showing the result
-    //line(src, Point(344,1000), Point(344,-1000), Scalar(255,255,255), 2, CV_AA);
     namedWindow( "corners_window", CV_WINDOW_NORMAL );
     imshow( "corners_window", dst_norm_scaled );
 }
 
-void GoalFinder::ClassifyLineHV(float r, float t)
+void GoalFinder::ClassifyLineHV() //theta dalam degree
 {
-    if((t >= 45 && t <= 135) || (t >= 225) && (t <= 315)) // HORIZONTAL
+	for( size_t i = 0; i < lines.size(); i++ )
     {
-        // Insert to Vector Horizontal
-        horizontal.push_back(Vec2f(r,DegreesToRadians(t)));
+    //for(std::vector<Vec2f>::iterator iter = lines.begin() ; iter < lines.end() ; iter++)
+    //{
+    	float rho = lines[i][0]; 
+    	float theta = RadiansToDegrees(lines[i][1]);//radian
+    	
+    	if((theta >= 45 && theta <= 135) || (theta >= 225) && (theta <= 315)) // HORIZONTAL
+    	{
+        	// Insert to Vector Horizontal
+        	horizontal.push_back(Vec2f(rho,theta));
+    	}
+    	else // VERTICAL
+    	{
+    		//printf("t:%f\n",theta);
+        	//Insert to Vector Vertical
+        	vertical.push_back(Vec2f(rho,theta));
+    	}
     }
-    else // VERTICAL
-    {
-        //Insert kto Vector Vertical
-        vertical.push_back(Vec2f(r,DegreesToRadians(t)));
-    }
+    
 }
 
 void GoalFinder::CalculateMeanH()
@@ -401,15 +428,14 @@ void GoalFinder::CalculateMeanH()
     int r_sum = 0;
     float teta_sum_sin = 0;
     float teta_sum_cos = 0;
-    for( size_t i = 0; i < horizontal.size(); i++ )
+    for(std::vector<Vec2f>::iterator iter = horizontal.begin() ; iter < horizontal.end() ; iter++)
     {
-        r_sum += (int)horizontal[i][0];
-        teta_sum_sin += sin(horizontal[i][1]);
-        teta_sum_cos += cos(horizontal[i][1]);
+        r_sum += (int)(*iter)[0];
+        teta_sum_sin += sin((*iter)[1] *PI/180);
+        teta_sum_cos += cos((*iter)[1] *PI/180);
     }
     r_mean_h = r_sum / horizontal.size();
-    teta_mean_h = atan2(teta_sum_sin/2,teta_sum_cos/2)/*/PI*180*/;
-    printf("RHO:%d, THETHA:%f\n",r_mean_h,teta_mean_h);
+    teta_mean_h = atan2(teta_sum_sin/2,teta_sum_cos/2)/PI*180;
 }
 
 void GoalFinder::CalculateMeanV()
@@ -417,40 +443,40 @@ void GoalFinder::CalculateMeanV()
     int r_sum = 0;
     float teta_sum_sin = 0;
     float teta_sum_cos = 0;
-    for( size_t i = 0; i < vertical.size(); i++ )
+    
+    for(std::vector<Vec2f>::iterator iter = vertical.begin() ; iter < vertical.end() ; iter++)
     {
-        r_sum += (int)vertical[i][0];
-        teta_sum_sin += sin(vertical[i][1]);
-        teta_sum_cos += cos(vertical[i][1]);
+        r_sum += (int)(*iter)[0];
+        teta_sum_sin += sin((*iter)[1] *PI/180);
+        teta_sum_cos += cos((*iter)[1] *PI/180);
     }
-    r_mean_v = r_sum / horizontal.size();
+    r_mean_v = r_sum / vertical.size();
     teta_mean_v = atan2(teta_sum_sin/2,teta_sum_cos/2)/PI*180;
-
 }
 
 void GoalFinder::CalculateVarianceV()
 {
     int temp_var = 0;
+    //for(vector<Vec2f>::iterator iter = vertical.begin(); iter<vertical.end() ;iter++)
+    //{
     for( size_t i = 0; i < vertical.size(); i++ )
     {
-        temp_var += ((int)vertical[i][0] - r_mean_v) * ((int)vertical[i][0] - r_mean_v);
+    	printf(">>>>>>>>%d\n",((int)vertical[i][0]));
+        temp_var += (((int)vertical[i][0]) - r_mean_v) * (((int)vertical[i][0]) - r_mean_v);
     }
     variansi_v = temp_var / (vertical.size());
+    printf("VARIANSI_V:%d\n",variansi_v);
+    printf("t : %d\n", vertical.size());
 }
 
 void GoalFinder::ClassifyLineRL()
 {
-    for( size_t i = 0; i < vertical.size(); i++ )
+    for(std::vector<Vec2f>::iterator iter=vertical.begin() ; iter<vertical.end() ; iter++)
     {
-        if((int)vertical[i][0] > r_mean_v) {
-            right_post.push_back(i);
-        	printf("RIGHTTTTTTTTTT\n");
-        }
+        if((int)(*iter)[0] > r_mean_v)
+            right_post.push_back(*iter);
         else
-        {
-            left_post.push_back(i);
-    		printf("LEFTTTTTTTTTTT\n");
-    	}
+            left_post.push_back(*iter);
     }
 }
 
@@ -460,31 +486,62 @@ void GoalFinder::CalculateMeanRL()
     float teta_sum_sin = 0;
     float teta_sum_cos = 0;
 
-    for( size_t i = 0; i < right_post.size(); i++ )
+    // MEAN RIGHT
+    for(std::vector<Vec2f>::iterator iter=right_post.begin();iter<right_post.end();iter++)
     {
-        r_sum += (int)vertical[i][0];
-        teta_sum_sin += sin(vertical[i][1]);
-        teta_sum_cos += cos(vertical[i][1]);
-        printf("BUG RIGHT\n");
+        r_sum += (int)(*iter)[0];
+        teta_sum_sin += sin((*iter)[1] *PI/180);
+        teta_sum_cos += cos((*iter)[1] *PI/180);
     }
-    //r_mean_right = r_sum / right_post.size();
+    r_mean_right = r_sum / right_post.size();
     teta_mean_right = atan2(teta_sum_sin/2,teta_sum_cos/2)/PI*180;
 
+    //MEAN LEFT
     r_sum = 0;
     teta_sum_sin = 0;
     teta_sum_cos = 0;
 
-    for( size_t i = 0; i < left_post.size(); i++ )
+    for(std::vector<Vec2f>::iterator iter=left_post.begin();iter<left_post.end();iter++)
     {
-        r_sum += (int)vertical[i][0];
-        teta_sum_sin += sin(vertical[i][1]);
-        teta_sum_cos += cos(vertical[i][1]);
-    	//printf("BUG LEFT\n");
+        r_sum += (int)(*iter)[0];
+        teta_sum_sin += sin((*iter)[1] *PI/180);
+        teta_sum_cos += cos((*iter)[1] *PI/180);
     }
-    //r_mean_left = r_sum / left_post.size();
+    r_mean_left = r_sum / left_post.size();
     teta_mean_left = atan2(teta_sum_sin/2,teta_sum_cos/2)/PI*180;
 }
 
+bool GoalFinder::ValidateH()
+{
+    return(horizontal.size() != 0);
+}
+
+bool GoalFinder::ValidateV()
+{
+    return(vertical.size() > 0);
+}
+
+void GoalFinder::StateCheck()
+{
+    if((!ValidateH()) && (!ValidateV()))
+        goalstate = NL;
+    else if(ValidateH())
+    {
+        if(!ValidateV())
+            goalstate = CO;
+        else if(variansi_v >= variansi)
+            goalstate = C2P;
+        else if(variansi_v < variansi)
+            goalstate = C1P;
+    }
+    else if(ValidateV())
+    {
+        if(variansi_v >= variansi)
+            goalstate = NC2P;
+        else if(variansi_v < variansi)
+            goalstate = NC1P;
+    }
+}
 
 Point GoalFinder::CalculateIntersection(int R1, float Teta1, int R2, float Teta2)
 {
@@ -523,6 +580,7 @@ float GoalFinder::RadiansToDegrees(float radians){
 }
 
 void GoalFinder::DrawLine(Mat image, float r_draw, float t_draw) {
+    printf("R:%f, T:%f\n",r_draw,t_draw);
     double a = cos(t_draw), b = sin(t_draw);
     double x0 = a*r_draw, y0 = b*r_draw;
     Point p1,p2;
@@ -530,5 +588,64 @@ void GoalFinder::DrawLine(Mat image, float r_draw, float t_draw) {
     p1.y = cvRound(y0 + 1000*(a));
     p2.x = cvRound(x0 - 1000*(-b));
     p2.y = cvRound(y0 - 1000*(a));
+    printf("x1:%d, y1:%d, x2:%d, y2:%d\n", p1.x,p1.y,p2.x,p2.y);
     line(image, p1, p2, Scalar(0,0,0), 3, CV_AA);
+}
+
+void GoalFinder::Process(Mat image, bool OppGoal)
+{
+	Mat hsv;
+	Mat th;
+	Mat edge;
+
+	cvtColor(image,hsv,CV_BGR2HSV);
+	inRange(hsv,Scalar(min_H,min_S,min_V),Scalar(max_H,max_S,max_V),th);
+	morphOps(th);
+	Canny(th,edge,lowThreshold,lowThreshold*ratio,kernel_size);
+    GaussianBlur( edge, edge, Size(5, 5), 3, 3);
+    HoughLines(edge, lines, 1, CV_PI/180, 220, 0, 0 );
+    ClassifyLineHV();
+    if(ValidateV())
+    {
+    	CalculateMeanV();
+    	CalculateVarianceV();
+    }
+    StateCheck();
+
+    switch(goalstate)
+    {
+        case C2P:
+                
+                break;
+
+        case C1P:
+                
+				break;
+
+        case CO :
+                
+                break;
+
+        case NC2P :
+                
+                break;
+
+        case NC1P :
+                
+                break;
+
+        case NL :
+                
+                break;
+    }
+}
+
+void GoalFinder::Reset()
+{
+	lines.clear();
+	horizontal.clear();
+    vertical.clear();
+    left_post.clear();
+    right_post.clear();
+    goalstate = NL;
 }

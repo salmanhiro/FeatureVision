@@ -40,17 +40,22 @@ int main(void)
 
     //BallFinder* finder = new BallFinder();
     //finder->LoadINISettings(ini);
-    VideoCapture cap(1);
+    VideoCapture capture;
+    //capture.open("goal.avi");
     while(1)
     {
-        
+    	capture.open("goal1.png");    
         Point2D pos;
         //cap.set(CV_CAP_PROP_EXPOSURE, 1000);
         //printf("░░░░░░░░░░░░░░░░░░░░░░░░░░░\nX:%lf, Y:%lf\n░░░░░░░░░░░░░░░░░░░░░░░░░░░\n", pos.X, pos.Y);
-        cap.read(image);
-        GoalFinder::GetInstance()->Process(image);
+        //while(capture.get(CV_CAP_PROP_POS_FRAMES)<capture.get(CV_CAP_PROP_FRAME_COUNT-1)){
+
+        capture.read(image);
+        GoalFinder::GetInstance()->Filtering(image);
         GoalFinder::GetInstance()->ControlPanel(ini);
         
+        //}
+        //capture.release();
     }
 
     return 0;

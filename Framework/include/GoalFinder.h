@@ -16,13 +16,14 @@
 #include <opencv2/highgui/highgui.hpp>
 
 #include <stdio.h>
-
 #include <string>
 #include <iostream>
 #include <vector>
+#include <cmath>
 
 #include "Point.h"
 #include "minIni.h"
+#include "Camera.h"
 
 
 #define COLOR_SECTION   "Find Goal"
@@ -153,9 +154,12 @@ namespace Robot {
 			bool ValidateH();
   			bool ValidateV();
   			void StateCheck();
-  			Point CalculateIntersection(int R1, float Teta1, int R2, float Teta2);
+  			Point CalculateIntersection(int R1, int Teta1, int R2, int Teta2);
 			void DrawLine(Mat image, float r_draw, float t_draw);
 			void Reset();
+			Point RunDown(Mat thresh, Point start, int teta, int step);
+			Point RunRight(Mat thresh, Point start, int teta, int step);
+			Point RunLeft(Mat thresh, Point start, int teta, int step);
 			
 			/////////////////////////
 

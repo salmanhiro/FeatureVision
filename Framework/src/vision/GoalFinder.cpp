@@ -216,65 +216,22 @@ void GoalFinder::Filtering(Mat image)
     }
     */
   
-/*
-    //Draw
-  	DrawLine(image, r_mean_h, teta_mean_h);
-  	DrawLine(image, r_mean_right, teta_mean_right);
-  	DrawLine(image, r_mean_left, teta_mean_left);  
-*/
-    //printf("h:%d, r:%d, l:%d\n", h, r, l);
-/*
-    cvtColor(edge,drawing,CV_GRAY2BGR);
-    GaussianBlur(drawing, drawing, Size(5, 5), 2, 2);
-    if(h > 0)
-    {
-        //HORIZONTAL
-        Point draw1, draw2;
-        draw1.x = horizontal1.x/h;
-        draw1.y = horizontal1.y/h;
-        draw2.x = horizontal2.x/h;
-        draw2.y = horizontal2.y/h;
-        theta_h = theta_sum_h/h;
-        rho_h = r_sum_h/h;
-        printf("H:%d\n", h);
-        line(drawing, draw1, draw2, Scalar(0,255,0), 2, CV_AA);
-    }
+    DrawLine(image, r_mean_h, DegreesToRadians(teta_mean_h));
+    DrawLine(image, r_mean_right, DegreesToRadians(teta_mean_right));
+    DrawLine(image, r_mean_left, DegreesToRadians(teta_mean_left));  
 
-    if (l>0)
-    {
-        //VERTIKAL left
-        Point draw_L1, draw_L2;
-        draw_L1.x = vertikal1_L.x/l;
-        draw_L1.y = vertikal1_L.y/l;
-        draw_L2.x = vertikal2_L.x/l;
-        draw_L2.y = vertikal2_L.y/l;
-        theta_l = theta_sum_l/l;
-        rho_l = r_sum_l/l;
-        printf("L:%d\n", l);
-        line(drawing, draw_L1, draw_L2, Scalar(255,255,0), 2, CV_AA);
-    }
-
-    if (r>0)
-    {
-        //VERTIKAL right
-        Point draw_R1, draw_R2;
-        draw_R1.x = vertikal1_R.x/r;
-        draw_R1.y = vertikal1_R.y/r;
-        draw_R2.x = vertikal2_R.x/r;
-        draw_R2.y = vertikal2_R.y/r;
-        theta_r = theta_sum_r/r;
-        rho_r = r_sum_r/r;
-        printf("R:%d\n", r);
-        line(drawing, draw_R1, draw_R2, Scalar(255,255,0), 2, CV_AA);
-    }
- */
-     
-    //circle(drawing, CalculateIntersection(rho_h, RadiansToDegrees(theta_h), rho_r, RadiansToDegrees(theta_r), 5,  Scalar(0,255,255), 5, 8, 0 );
-    //circle(drawing, CalculateIntersection(rho_h, RadiansToDegrees(theta_h), rho_l, RadiansToDegrees(theta_l), 5,  Scalar(0,255,255), 5, 8, 0 );
-
- 
-	//printParam();
-    //getCorner(drawing);
+    circle(image, CalculateIntersection(r_mean_h, teta_mean_h, r_mean_right, teta_mean_right), 5,  Scalar(0,255,255), 5, 8, 0 );
+    circle(image, CalculateIntersection(r_mean_h, teta_mean_h, r_mean_left, teta_mean_left), 5,  Scalar(0,255,255), 5, 8, 0 );
+    Point RightIntersec = CalculateIntersection(r_mean_h, teta_mean_h, r_mean_right, teta_mean_right);
+    cout << "Right Intersec = " << RightIntersec.x << " " << RightIntersec.y << endl;
+    Point LeftIntersec = CalculateIntersection(r_mean_h, teta_mean_h, r_mean_left, teta_mean_left);
+    cout << "Left Intersec = " << LeftIntersec.x << " " << LeftIntersec.y << endl;
+    circle(image, RunDown(th, RightIntersec, teta_mean_right, 1), 5, Scalar(0,255,255), 5, 8, 0);
+    Point RightDown = RunDown(th, RightIntersec, teta_mean_right, 1);
+    circle(image, RunDown(th, LeftIntersec, teta_mean_left, 1), 5, Scalar(0,255,255), 5, 8, 0);
+    Point LeftDown = RunDown(th, LeftIntersec, teta_mean_left, 1);
+    cout << "Right Down = " << RightDown.x << " " << RightDown.y << endl;
+    cout << "Left Down = " << LeftDown.x << " " << LeftDown.y << endl;
     waitKey(30);
 	
     
@@ -648,4 +605,230 @@ void GoalFinder::Reset()
     left_post.clear();
     right_post.clear();
     goalstate = NL;
+}
+
+oint GoalFinder::RunDown(Mat thresh, Point start, int teta, int step)
+{
+	int x;
+	int xstart = start.x;
+	int ystart = start.y;
+	int lasty = -1;
+	int lastx = -1;
+	int count = 0;
+	int miss ;
+	miss = 0;	
+    if(teta == 0)
+	{
+		x = xstart;
+		for(int y = ystart ; y < Camera::HEIGHT ; y+=step)
+		{
+			count = 0;
+            Scalar intensity = thresh.at<uchar>(y,x);
+
+			for(int n = 0 ; n <= 3 ; n++)
+			{
+                if( intensity.val[0] == 255)
+				{
+					count++;
+				}
+			}
+			
+			// Extra check added, Considered as end of post when miss 3X 
+			if(count < 1)
+			{
+				miss++;
+			}
+			else
+			{
+				miss = 0;
+			}
+			
+			if(miss >= 3)
+			{
+				lastx = x;
+				lasty = y;
+				break;
+			}
+			else if((y >= Camera::HEIGHT - step)&&(miss<3))
+			{
+				lastx = x;
+				lasty = Camera::HEIGHT;
+			}
+		}
+	}
+	else
+	{ 
+        float m = -1 / tan(DegreesToRadians(teta));	
+		for(int y = ystart ; y < Camera::HEIGHT ; y+=step)
+		{
+			count = 0;
+            x = xstart + ((y - ystart) / m);
+            Scalar intensity = thresh.at<uchar>(y,x);
+			for(int n = 0 ; n <= 3 ; n++)
+			{
+                if( intensity.val[0] == 255)
+				{
+					count++;
+				}
+			}
+			
+			if(count < 1)
+			{
+				miss++;
+			}
+			else
+			{
+				miss = 0;
+			}
+			
+			if(miss >= 3)
+			{
+				lastx = x;
+				lasty = y;
+				break;
+			}
+			else if((y >= Camera::HEIGHT - step)&&(miss<3))
+			{
+				lastx = xstart + (Camera::HEIGHT - ystart) / m;
+				lasty = Camera::HEIGHT;
+			}
+		}
+	}
+	return Point(lastx ,lasty);
+}
+
+Point GoalFinder::RunRight(Mat thresh, Point start, int teta, int step)
+{
+    int lasty = -1;
+    int lastx = -1;
+    int count = 0;
+    int y;
+    int xstart = start.x;
+    int ystart = start.y;
+    if(teta == 90)
+    {
+        y = ystart;
+        for(int x = xstart ; x < Camera::WIDTH ; x += step)
+        {
+            count = 0;
+            Scalar intensity = thresh.at<uchar>(y,x);
+            for(int n = -3 ; n <=3 ; n++)
+            {
+                if(intensity.val[0] == 255)
+                {
+                    count++;
+                }
+            }
+            if(count < 1)
+            {
+                lastx = x;
+                lasty = y;
+                break;
+            }
+            else if((x >= Camera::WIDTH - step)&&(count>=1))
+            {
+                lastx = Camera::WIDTH;
+                lasty = y;
+            }
+        }
+    }
+    else
+    {
+        double m = -1 / tan(DegreesToRadians(teta));  
+        for(int x = xstart ; x < Camera::WIDTH ; x += step)
+        {
+            y = ystart + (x-xstart) * m ;
+            Scalar intensity = thresh.at<uchar>(y,x);
+            count = 0;
+            for(int n = -3 ; n <=3 ; n++)
+            {
+                if(intensity.val[0] == 255)
+                {
+                    count++;
+                }
+            }
+            if(count < 1)
+            {
+                lastx = x;
+                lasty = y;
+                break;
+            }
+            else if((x >= Camera::WIDTH - step)&&(count>=1))
+            {
+                lastx = Camera::WIDTH;
+                lasty = ystart + (Camera::WIDTH-xstart) * m;
+            }
+            
+    
+        }
+    }
+    return Point(lastx,lasty);
+}
+
+Point GoalFinder::RunLeft(Mat thresh, Point start, int teta, int step)
+{
+    int lasty = -1;
+    int lastx = -1;
+    int count = 0;
+    int y;
+    int xstart = start.x;
+    int ystart = start.y;
+    if(teta == 90)
+    {
+        y = ystart;
+        for(int x = xstart ; x > 0 ; x -= step)
+        {
+            count = 0;
+            Scalar intensity = thresh.at<uchar>(y,x);
+            for(int n = -3 ; n <=3 ; n++)
+            {
+                if(intensity.val[0] == 255)
+                {
+                    count++;
+                }
+            }
+            if(count < 1)
+            {
+                lastx = x;
+                lasty = y;
+                break;
+            }
+            else if((x <= 0 + step)&&(count>=1))
+            {
+                lastx = 0;
+                lasty = y;
+            }
+        }
+    }
+    else
+    {
+        double m = -1 / tan(DegreesToRadians(teta));  
+        for(int x = xstart ; x > 0 ; x -= step)
+        {
+            y = ystart + (x-xstart) * m;
+            count = 0;
+            Scalar intensity = thresh.at<uchar>(y,x);
+            for(int n = -3 ; n <=3 ; n++)
+            {
+                if(intensity.val[0] == 255)
+                {
+                    count++;
+                }
+            }
+            if(count < 1)
+            {
+                lastx = x;
+                lasty = y;
+                break;
+            }
+            else if((x <= 0 + step)&&(count>=1))
+            {
+                lastx = 0;
+                lasty = ystart + (Camera::WIDTH-xstart) * m;
+            }
+            
+    
+        }
+    }
+    return Point(lastx,lasty);
 }

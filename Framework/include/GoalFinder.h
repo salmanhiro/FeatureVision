@@ -113,6 +113,9 @@ namespace Robot {
 		    float teta_mean_right;
 
 		    int variansi_v;
+			int Status;
+			Point RightFoot, LeftFoot;
+			Point CenterUpperPost, RightUpperPost, LeftUpperPost;
 
 
 			GoalFinder();
@@ -131,15 +134,9 @@ namespace Robot {
 			float theta;
         	Point pt1, pt2;
 
-			//Corner
-			Point2D TR;
-			Point2D TL;
-			Point2D BR;
-			Point2D BL;
 			
 			void printParam();
 			void Process(Mat image, bool OppGoal);
-			void Filtering(Mat image);
 			void ControlPanel(minIni* ini);
 			void getCorner(Mat src);
 			
@@ -160,7 +157,6 @@ namespace Robot {
 			Point RunDown(Mat thresh, Point start, int teta, int step);
 			Point RunRight(Mat thresh, Point start, int teta, int step);
 			Point RunLeft(Mat thresh, Point start, int teta, int step);
-			
 			/////////////////////////
 
 			float DegreesToRadians(float degrees);

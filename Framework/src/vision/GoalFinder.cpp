@@ -88,171 +88,15 @@ void GoalFinder::morphOps(Mat &thresh){
         dilate(thresh, thresh, dilateElement);
 }
 
-void GoalFinder::Filtering(Mat image)
-{
-    Mat drawing;
-   	Reset();
-	//GaussianBlur( image, img, Size(3, 3), 2, 2 );
-	//GaussianBlur( img, img, Size(9, 9), 2, 2);
-	cvtColor(image,hsv,CV_BGR2HSV);
-	inRange(hsv,Scalar(min_H,min_S,min_V),Scalar(max_H,max_S,max_V),th);
-	morphOps(th);
-	GaussianBlur( th, th, Size(3, 3), 2, 2);
-	
-	Canny( th, edge, lowThreshold, lowThreshold*ratio, kernel_size);
-	//cvtColor(edge,drawing,CV_GRAY2BGR);
-    GaussianBlur( edge, edge, Size(5, 5), 3, 3);
-
-
-    Point horizontal1, horizontal2;
-    Point vertikal1_L, vertikal2_L;
-    Point vertikal1_R, vertikal2_R;
-    int h=0, l=0, r=0;
-    
-    HoughLines(edge, lines, 1, CV_PI/180, 220, 0, 0 );
-    printf("LINE : %d\n",lines.size());
-    
-    float r_sum_h=0, r_sum_l=0, r_sum_r=0;
-    float theta_sum_h=0, theta_sum_l=0, theta_sum_r=0;
-    float theta_h, rho_h, theta_r, rho_r, theta_l, rho_l;
-    //printf("\n░░░░░░░░░░░░░░░░░░░░░\n");
-    for( size_t i = 0; i < lines.size(); i++ )
-    {
-        rho = lines[i][0]; theta = lines[i][1];//radian
-        double a = cos(theta), b = sin(theta);
-        double x0 = a*rho, y0 = b*rho;
-        pt1.x = cvRound(x0 + 1000*(-b));
-        pt1.y = cvRound(y0 + 1000*(a));
-        pt2.x = cvRound(x0 - 1000*(-b));
-        pt2.y = cvRound(y0 - 1000*(a));
-        line(image, pt1, pt2, Scalar(0,0,255), 1, CV_AA);
-        
-        //printf("\n░░░░░░░░░░░░░░░░░░░░░\n");
-        //printf("RHO:%f\n", rho );
-        //printf("TETHA:%f\n", theta );
-        //printf("[Titik1] X:%d, Y:%d\n", pt1.x, pt1.y);
-        //printf("[Titik2] X:%d, Y:%d\n", pt2.x, pt2.y);
-        //printf("░░░░░░░░░░░░░░░░░░░░░░░░\n");
-
-        //ClassifyLineHV(rho,RadiansToDegrees(theta));
-        //CalculateMeanH();
-    	
-        double degtheta = RadiansToDegrees(theta);
-        printf("TETHA:%f\n", degtheta );
-        //printf("DEGTHETA:%f\n",degtheta);
-        if((degtheta >= 45 && degtheta < 135)||(degtheta >= 225 && degtheta < 315)) //revisi 1
-        {
-            h++;
-            horizontal1.x += pt1.x;
-            horizontal2.x += pt2.x;
-            horizontal1.y += pt1.y;
-            horizontal2.y += pt2.y;
-            r_sum_h += rho;
-            theta_sum_h += theta;
-        } else {
-        	if(rho < -400 )
-	        {
-	            r++;
-	            vertikal1_R.x += pt1.x;
-	            vertikal2_R.x += pt2.x;
-	            vertikal1_R.y += pt1.y;
-	            vertikal2_R.y += pt2.y;
-	        	r_sum_r += rho;
-	        	theta_sum_r += theta;
-	        }
-	        if(rho < 0 && rho > -200)
-	        {
-	            l++;
-	            vertikal1_L.x += pt1.x;
-	            vertikal2_L.x += pt2.x;
-	            vertikal1_L.y += pt1.y;
-	            vertikal2_L.y += pt2.y;
-	        	r_sum_l += rho;
-	        	theta_sum_l += theta;
-	        }
-        }
-        
-
-    }
-    printf("\n░░░░░░░░░░░░░░░░░░░░░\n");
-    ClassifyLineHV();
-    if(ValidateV())
-    {
-        CalculateMeanV();
-        CalculateVarianceV();
-    }
-	ClassifyLineRL();
-	printf("Jumlah Vertikal : %d\n", vertical.size());
-/*
-	//Test isi vector Horizontal
-    for( size_t i = 0; i < horizontal.size(); i++ )
-    {
-        float r_H = horizontal[i][0], t_H = horizontal[i][1];
-        printf("HORIZONTAL >> R:%f,T:%f\n",r_H,t_H);
-    }
-
-    //Test isi vector Vertical
-    for( size_t i = 0; i < vertical.size(); i++ )
-    {
-        float r_V = vertical[i][0], t_V = vertical[i][1];
-        printf("VERTICAL >> R:%f,T:%f\n",r_V,t_V);
-    }
-
-    
-    //Test isi vector right_post
-    for( size_t i = 0; i < right_post.size(); i++ )
-    {
-    	float rp_r = right_post[i][0], tp_r = right_post[i][1];
-    	printf("R:%f, T:%f\n",rp_r, tp_r);
-    }
-*/
-
-    //Test isi vector left_post
-    /*
-    for( size_t i = 0; i < left_post.size(); i++ )
-    {
-    	float rp_l = left_post[i][0], tp_l = left_post[i][1];
-    	printf("R:%f, T:%f\n",rp_l, tp_l);
-    }
-    */
-  
-    DrawLine(image, r_mean_h, DegreesToRadians(teta_mean_h));
-    DrawLine(image, r_mean_right, DegreesToRadians(teta_mean_right));
-    DrawLine(image, r_mean_left, DegreesToRadians(teta_mean_left));  
-
-    circle(image, CalculateIntersection(r_mean_h, teta_mean_h, r_mean_right, teta_mean_right), 5,  Scalar(0,255,255), 5, 8, 0 );
-    circle(image, CalculateIntersection(r_mean_h, teta_mean_h, r_mean_left, teta_mean_left), 5,  Scalar(0,255,255), 5, 8, 0 );
-    Point RightIntersec = CalculateIntersection(r_mean_h, teta_mean_h, r_mean_right, teta_mean_right);
-    cout << "Right Intersec = " << RightIntersec.x << " " << RightIntersec.y << endl;
-    Point LeftIntersec = CalculateIntersection(r_mean_h, teta_mean_h, r_mean_left, teta_mean_left);
-    cout << "Left Intersec = " << LeftIntersec.x << " " << LeftIntersec.y << endl;
-    circle(image, RunDown(th, RightIntersec, teta_mean_right, 1), 5, Scalar(0,255,255), 5, 8, 0);
-    Point RightDown = RunDown(th, RightIntersec, teta_mean_right, 1);
-    circle(image, RunDown(th, LeftIntersec, teta_mean_left, 1), 5, Scalar(0,255,255), 5, 8, 0);
-    Point LeftDown = RunDown(th, LeftIntersec, teta_mean_left, 1);
-    cout << "Right Down = " << RightDown.x << " " << RightDown.y << endl;
-    cout << "Left Down = " << LeftDown.x << " " << LeftDown.y << endl;
-    waitKey(30);
-	
-    
-	namedWindow("Image", CV_WINDOW_NORMAL);
-	imshow( "Image", image );
-
-	//namedWindow("drawing", CV_WINDOW_NORMAL);
-	//imshow( "drawing", drawing );
-	
-}
-
 void GoalFinder::ControlPanel(minIni* ini)
 {
     CreateTrackbar();
-    
+        
     namedWindow("Edge", CV_WINDOW_NORMAL);
     imshow( "Edge", edge );
     
     namedWindow("Threshold", CV_WINDOW_NORMAL);
     imshow( "Threshold", th );
-
     
     SaveINISettings(ini);
 
@@ -330,8 +174,6 @@ void GoalFinder::getCorner(Mat src)
     Mat dst, dst_norm, dst_norm_scaled;
     dst = Mat::zeros( src.size(), CV_32FC1 );
 
-    //GaussianBlur( src, src, Size(9, 9), 4, 4);
- 
     // Detecting corners
     cornerHarris( gray, dst, 2, 3, 0.01, BORDER_DEFAULT );
  
@@ -347,7 +189,6 @@ void GoalFinder::getCorner(Mat src)
             if( (int) dst_norm.at<float>(j,i) > thresh )
             {
                 circle( dst_norm_scaled, Point( i, j ), 5,  Scalar(0,255,255), 1, 8, 0 );
-                printf("(%d,%d)\n",i,j );
             }
         }
     }
@@ -360,24 +201,24 @@ void GoalFinder::ClassifyLineHV() //theta dalam degree
 {
 	for( size_t i = 0; i < lines.size(); i++ )
     {
-    //for(std::vector<Vec2f>::iterator iter = lines.begin() ; iter < lines.end() ; iter++)
-    //{
     	float rho = lines[i][0]; 
     	float theta = RadiansToDegrees(lines[i][1]);//radian
     	
-    	if((theta >= 45 && theta <= 135) || (theta >= 225) && (theta <= 315)) // HORIZONTAL
+    	if((theta >= 45 && theta < 135) || (theta >= 225) && (theta < 315)) // HORIZONTAL
     	{
         	// Insert to Vector Horizontal
         	horizontal.push_back(Vec2f(rho,theta));
     	}
     	else // VERTICAL
     	{
-    		//printf("t:%f\n",theta);
         	//Insert to Vector Vertical
+            if (theta >= 0 && theta <= 10) {
+                theta = 180 - theta;
+                rho = rho * (-1);
+            }
         	vertical.push_back(Vec2f(rho,theta));
     	}
     }
-    
 }
 
 void GoalFinder::CalculateMeanH()
@@ -391,7 +232,7 @@ void GoalFinder::CalculateMeanH()
         teta_sum_sin += sin((*iter)[1] *PI/180);
         teta_sum_cos += cos((*iter)[1] *PI/180);
     }
-    r_mean_h = r_sum / horizontal.size();
+    r_mean_h = r_sum / int(horizontal.size());
     teta_mean_h = atan2(teta_sum_sin/2,teta_sum_cos/2)/PI*180;
 }
 
@@ -407,23 +248,19 @@ void GoalFinder::CalculateMeanV()
         teta_sum_sin += sin((*iter)[1] *PI/180);
         teta_sum_cos += cos((*iter)[1] *PI/180);
     }
-    r_mean_v = r_sum / vertical.size();
+    r_mean_v = r_sum / int(vertical.size());
     teta_mean_v = atan2(teta_sum_sin/2,teta_sum_cos/2)/PI*180;
 }
 
 void GoalFinder::CalculateVarianceV()
 {
     int temp_var = 0;
-    //for(vector<Vec2f>::iterator iter = vertical.begin(); iter<vertical.end() ;iter++)
-    //{
     for( size_t i = 0; i < vertical.size(); i++ )
     {
-    	printf(">>>>>>>>%d\n",((int)vertical[i][0]));
-        temp_var += (((int)vertical[i][0]) - r_mean_v) * (((int)vertical[i][0]) - r_mean_v);
+        temp_var += ((int(vertical[i][0])) - r_mean_v) * (((int)vertical[i][0]) - r_mean_v);
     }
-    variansi_v = temp_var / (vertical.size());
+    variansi_v = temp_var / int(vertical.size());
     printf("VARIANSI_V:%d\n",variansi_v);
-    printf("t : %d\n", vertical.size());
 }
 
 void GoalFinder::ClassifyLineRL()
@@ -444,13 +281,13 @@ void GoalFinder::CalculateMeanRL()
     float teta_sum_cos = 0;
 
     // MEAN RIGHT
-    for(std::vector<Vec2f>::iterator iter=right_post.begin();iter<right_post.end();iter++)
+    for(std::vector<Vec2f>::iterator iter=right_post.begin();iter<(right_post.end());iter++)
     {
         r_sum += (int)(*iter)[0];
         teta_sum_sin += sin((*iter)[1] *PI/180);
         teta_sum_cos += cos((*iter)[1] *PI/180);
     }
-    r_mean_right = r_sum / right_post.size();
+    r_mean_right = r_sum / int(right_post.size());
     teta_mean_right = atan2(teta_sum_sin/2,teta_sum_cos/2)/PI*180;
 
     //MEAN LEFT
@@ -464,43 +301,55 @@ void GoalFinder::CalculateMeanRL()
         teta_sum_sin += sin((*iter)[1] *PI/180);
         teta_sum_cos += cos((*iter)[1] *PI/180);
     }
-    r_mean_left = r_sum / left_post.size();
+    r_mean_left = r_sum / int(left_post.size());
     teta_mean_left = atan2(teta_sum_sin/2,teta_sum_cos/2)/PI*180;
 }
 
 bool GoalFinder::ValidateH()
 {
-    return(horizontal.size() != 0);
+    return(int(horizontal.size()) != 0);
 }
 
 bool GoalFinder::ValidateV()
 {
-    return(vertical.size() > 0);
+    return(int(vertical.size()) > 0);
 }
 
 void GoalFinder::StateCheck()
 {
-    if((!ValidateH()) && (!ValidateV()))
+    if((!ValidateH()) && (!ValidateV())) {
         goalstate = NL;
+        cout << "State = NL" << endl;
+    }
     else if(ValidateH())
     {
-        if(!ValidateV())
+        if(!ValidateV()) {
             goalstate = CO;
-        else if(variansi_v >= variansi)
+            cout << "State = CO" << endl;
+        }
+        else if(variansi_v >= 5000) {
             goalstate = C2P;
-        else if(variansi_v < variansi)
+            cout << "State = C2P" << endl;
+        }
+        else if(variansi_v < 5000) {
             goalstate = C1P;
+            cout << "State = C1P" << endl;
+        }
     }
     else if(ValidateV())
     {
-        if(variansi_v >= variansi)
+        if(variansi_v >= 5000) {
             goalstate = NC2P;
-        else if(variansi_v < variansi)
+            cout << "State = NC2P" << endl;
+        }
+        else if(variansi_v < 5000) {
             goalstate = NC1P;
+            cout << "State = NC1P" << endl;
+        }
     }
 }
 
-Point GoalFinder::CalculateIntersection(int R1, float Teta1, int R2, float Teta2)
+Point GoalFinder::CalculateIntersection(int R1, int Teta1, int R2, int Teta2)
 {
 	float point_x;
 	float point_y;
@@ -537,7 +386,6 @@ float GoalFinder::RadiansToDegrees(float radians){
 }
 
 void GoalFinder::DrawLine(Mat image, float r_draw, float t_draw) {
-    printf("R:%f, T:%f\n",r_draw,t_draw);
     double a = cos(t_draw), b = sin(t_draw);
     double x0 = a*r_draw, y0 = b*r_draw;
     Point p1,p2;
@@ -545,56 +393,7 @@ void GoalFinder::DrawLine(Mat image, float r_draw, float t_draw) {
     p1.y = cvRound(y0 + 1000*(a));
     p2.x = cvRound(x0 - 1000*(-b));
     p2.y = cvRound(y0 - 1000*(a));
-    printf("x1:%d, y1:%d, x2:%d, y2:%d\n", p1.x,p1.y,p2.x,p2.y);
     line(image, p1, p2, Scalar(0,0,0), 3, CV_AA);
-}
-
-void GoalFinder::Process(Mat image, bool OppGoal)
-{
-	Mat hsv;
-	Mat th;
-	Mat edge;
-
-	cvtColor(image,hsv,CV_BGR2HSV);
-	inRange(hsv,Scalar(min_H,min_S,min_V),Scalar(max_H,max_S,max_V),th);
-	morphOps(th);
-	Canny(th,edge,lowThreshold,lowThreshold*ratio,kernel_size);
-    GaussianBlur( edge, edge, Size(5, 5), 3, 3);
-    HoughLines(edge, lines, 1, CV_PI/180, 220, 0, 0 );
-    ClassifyLineHV();
-    if(ValidateV())
-    {
-    	CalculateMeanV();
-    	CalculateVarianceV();
-    }
-    StateCheck();
-
-    switch(goalstate)
-    {
-        case C2P:
-                
-                break;
-
-        case C1P:
-                
-				break;
-
-        case CO :
-                
-                break;
-
-        case NC2P :
-                
-                break;
-
-        case NC1P :
-                
-                break;
-
-        case NL :
-                
-                break;
-    }
 }
 
 void GoalFinder::Reset()
@@ -607,7 +406,7 @@ void GoalFinder::Reset()
     goalstate = NL;
 }
 
-oint GoalFinder::RunDown(Mat thresh, Point start, int teta, int step)
+Point GoalFinder::RunDown(Mat thresh, Point start, int teta, int step)
 {
 	int x;
 	int xstart = start.x;
@@ -617,7 +416,7 @@ oint GoalFinder::RunDown(Mat thresh, Point start, int teta, int step)
 	int count = 0;
 	int miss ;
 	miss = 0;	
-    if(teta == 0)
+   if(teta == 0)
 	{
 		x = xstart;
 		for(int y = ystart ; y < Camera::HEIGHT ; y+=step)
@@ -758,8 +557,6 @@ Point GoalFinder::RunRight(Mat thresh, Point start, int teta, int step)
                 lastx = Camera::WIDTH;
                 lasty = ystart + (Camera::WIDTH-xstart) * m;
             }
-            
-    
         }
     }
     return Point(lastx,lasty);
@@ -826,9 +623,111 @@ Point GoalFinder::RunLeft(Mat thresh, Point start, int teta, int step)
                 lastx = 0;
                 lasty = ystart + (Camera::WIDTH-xstart) * m;
             }
-            
-    
         }
     }
     return Point(lastx,lasty);
+}
+
+void GoalFinder::Process(Mat image, bool OppGoal)
+{
+    Point tempP;
+
+    Reset();
+	cvtColor(image,hsv,CV_BGR2HSV);
+	inRange(hsv,Scalar(min_H,min_S,min_V),Scalar(max_H,max_S,max_V),th);
+	morphOps(th);
+	Canny(th,edge,lowThreshold,lowThreshold*ratio,kernel_size);
+    GaussianBlur( edge, edge, Size(5, 5), 3, 3);
+    HoughLines(edge, lines, 1, CV_PI/180, 220, 0, 0 );
+    ClassifyLineHV();
+    if(ValidateV())
+    {
+    	CalculateMeanV();
+    	CalculateVarianceV();
+    }
+    StateCheck();
+
+    switch(goalstate)
+    {
+        case C2P:
+                CalculateMeanH();
+                ClassifyLineRL();
+                CalculateMeanRL();
+                RightUpperPost = CalculateIntersection(r_mean_h,teta_mean_h,r_mean_right,teta_mean_right);
+                LeftUpperPost = CalculateIntersection(r_mean_h,teta_mean_h,r_mean_left,teta_mean_left);
+                RightFoot = RunDown(th, RightUpperPost, teta_mean_right, 1);
+                LeftFoot = RunDown(th, LeftUpperPost, teta_mean_left, 1);
+                //CalculateGoalSlope();
+                //CalculateGoalDistance();
+                Status = BOTH_POST;
+                DrawLine(image, r_mean_h, DegreesToRadians(teta_mean_h));
+                DrawLine(image, r_mean_right, DegreesToRadians(teta_mean_right));
+                DrawLine(image, r_mean_left, DegreesToRadians(teta_mean_left));  
+                circle(image, RightUpperPost, 5, Scalar(0,255,255), 5, 8, 0 );
+                circle(image, LeftUpperPost, 5, Scalar(0,255,255), 5, 8, 0 );
+                circle(image, RightFoot, 5, Scalar(0,255,255), 5, 8, 0);
+                circle(image, LeftFoot, 5, Scalar(0,255,255), 5, 8, 0);
+                break;
+
+        case C1P:
+                CalculateMeanH();
+                DrawLine(image, r_mean_h, DegreesToRadians(teta_mean_h));
+                tempP = CalculateIntersection(r_mean_h,teta_mean_h,r_mean_v,teta_mean_v);
+                if(RunRight(th, tempP, teta_mean_h, 1).x >= (tempP.x+50))
+                {
+                    DrawLine(image, r_mean_left, DegreesToRadians(teta_mean_left));
+					Status = LEFT_POST;
+					LeftUpperPost = tempP;
+                    LeftFoot = RunDown(th, LeftUpperPost, teta_mean_left, 1);
+                    circle(image, LeftUpperPost, 5, Scalar(0,255,255), 5, 8, 0 );
+                    circle(image, LeftFoot, 5, Scalar(0,255,255), 5, 8, 0);
+				}
+                else if(RunLeft(th, tempP, teta_mean_h, 1).x <= (tempP.x-50))
+                {
+                    DrawLine(image, r_mean_right, DegreesToRadians(teta_mean_right));
+                	Status = RIGHT_POST;
+					RightUpperPost = tempP;
+                    RightFoot = RunDown(th, RightUpperPost, teta_mean_right, 1);
+                    circle(image, RightUpperPost, 5, Scalar(0,255,255), 5, 8, 0 );
+                    circle(image, RightFoot, 5, Scalar(0,255,255), 5, 8, 0);
+				}
+                else
+				{
+						Status = UNKNOWN_POST;
+				}                
+				break;
+
+        case CO :
+                CalculateMeanH();
+                DrawLine(image, r_mean_h, DegreesToRadians(teta_mean_h));
+                Status = NONE;
+                break;
+
+        case NC2P :
+                ClassifyLineRL();
+                CalculateMeanRL();
+                DrawLine(image, r_mean_right, DegreesToRadians(teta_mean_right));
+                DrawLine(image, r_mean_left, DegreesToRadians(teta_mean_left)); 
+                RightUpperPost = CalculateIntersection(0,90,r_mean_right,teta_mean_right);
+                LeftUpperPost = CalculateIntersection(0,90,r_mean_left,teta_mean_left);
+                RightFoot = RunDown(th, RightUpperPost, teta_mean_right, 1);
+                LeftFoot = RunDown(th, LeftUpperPost, teta_mean_left, 1);
+                //CalculateGoalSlope();
+                //CalculateGoalDistance();
+                Status = BOTH_POST;                
+                break;
+
+        case NC1P :
+                tempP = CalculateIntersection(0,90,r_mean_v,teta_mean_v);
+				LeftFoot = RunDown(th, tempP, teta_mean_v, 1);
+				RightFoot = LeftFoot;
+                Status = UNKNOWN_POST;
+                break;
+
+        case NL :
+                Status = NONE;
+                break;
+    }
+    namedWindow("Image", CV_WINDOW_NORMAL);
+	imshow( "Image", image );
 }

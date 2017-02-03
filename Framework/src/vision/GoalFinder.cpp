@@ -349,6 +349,17 @@ void GoalFinder::StateCheck()
     }
 }
 
+void GoalFinder::CalculateGoalSlope()
+{
+    goalslope = atan((RightFoot.y - LeftFoot.y)/(RightFoot.x - LeftFoot.x)) * 180 / PI ;
+}
+
+void GoalFinder::CalculateGoalDistance()
+{
+    goaldistance = 300 * GoalWidth / abs(RightFoot.x - LeftFoot.x);
+    //cout << "GoalDistance = " << goaldistance << endl;
+}
+
 Point GoalFinder::CalculateIntersection(int R1, int Teta1, int R2, int Teta2)
 {
 	float point_x;

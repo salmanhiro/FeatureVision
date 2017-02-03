@@ -29,7 +29,8 @@
 #define COLOR_SECTION   "Find Goal"
 #define INVALID_VALUE   -1024.0
 #define PI 3.14159265
-
+#define GoalWidth 170,5 //dimensi gawang dalam cm
+#define GoalHeight 90
 
 #define max_val 255
 #define max_lowThreshold 500

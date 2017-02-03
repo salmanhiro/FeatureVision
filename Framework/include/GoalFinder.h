@@ -116,6 +116,8 @@ namespace Robot {
 			int Status;
 			Point RightFoot, LeftFoot;
 			Point CenterUpperPost, RightUpperPost, LeftUpperPost;
+			int goaldistance;
+			float goalslope;
 
 
 			GoalFinder();
@@ -157,6 +159,8 @@ namespace Robot {
 			Point RunDown(Mat thresh, Point start, int teta, int step);
 			Point RunRight(Mat thresh, Point start, int teta, int step);
 			Point RunLeft(Mat thresh, Point start, int teta, int step);
+			void CalculateGoalDistance();
+			void CalculateGoalSlope();
 			/////////////////////////
 
 			float DegreesToRadians(float degrees);

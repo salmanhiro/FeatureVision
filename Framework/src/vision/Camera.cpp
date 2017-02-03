@@ -10,6 +10,6 @@
 
 using namespace Robot;
 
-int Camera::WIDTH  = 320;
-int Camera::HEIGHT = 240;
+int Camera::WIDTH  = 640;
+int Camera::HEIGHT = 480;
 

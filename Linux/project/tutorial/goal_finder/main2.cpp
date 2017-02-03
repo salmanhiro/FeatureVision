@@ -51,7 +51,7 @@ int main(void)
         //while(capture.get(CV_CAP_PROP_POS_FRAMES)<capture.get(CV_CAP_PROP_FRAME_COUNT-1)){
 
         capture.read(image);
-        GoalFinder::GetInstance()->Filtering(image);
+        GoalFinder::GetInstance()->Process(image, true);
         GoalFinder::GetInstance()->ControlPanel(ini);
         
         //}

@@ -157,7 +157,8 @@ namespace Robot {
   			Point CalculateIntersection(int R1, int Teta1, int R2, int Teta2);
 			void DrawLine(Mat image, float r_draw, float t_draw);
 			void Reset();
-			Point RunDown(Mat thresh, Point start, int teta, int step);
+			Point RunDownC2P(Mat thresh, Point start, int teta, int step);
+			Point RunDownC1P(Mat thresh, Point start, int teta, int step);
 			Point RunRight(Mat thresh, Point start, int teta, int step);
 			Point RunLeft(Mat thresh, Point start, int teta, int step);
 			void CalculateGoalDistance();

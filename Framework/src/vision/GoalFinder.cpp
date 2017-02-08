@@ -417,7 +417,7 @@ void GoalFinder::Reset()
     goalstate = NL;
 }
 
-Point GoalFinder::RunDown(Mat thresh, Point start, int teta, int step)
+Point GoalFinder::RunDownC2P(Mat thresh, Point start, int teta, int step)
 {
 	int x;
 	int xstart = start.x;
@@ -504,6 +504,55 @@ Point GoalFinder::RunDown(Mat thresh, Point start, int teta, int step)
 			}
 		}
 	}
+	return Point(lastx ,lasty);
+}
+
+Point GoalFinder::RunDownC1P(Mat thresh, Point start, int teta, int step)
+{
+	int x;
+	int xstart = start.x;
+	int ystart = start.y;
+	int lasty = -1;
+	int lastx = -1;
+	int count = 0;
+	int miss ;
+	miss = 0;
+    x = xstart;
+	for(int y = ystart ; y < Camera::HEIGHT ; y+=step)
+	{
+		count = 0;
+        Scalar intensity = thresh.at<uchar>(y,x);
+			for(int n = 0 ; n <= 3 ; n++)
+			{
+                if( intensity.val[0] == 255)
+				{
+					count++;
+				}
+			}
+			
+			// Extra check added, Considered as end of post when miss 3X 
+			if(count < 1)
+			{
+				miss++;
+			}
+			else
+			{
+				miss = 0;
+			}
+			
+			if(miss >= 3)
+			{
+				lastx = x;
+				lasty = y;
+				break;
+			}
+			else if((y >= Camera::HEIGHT - step)&&(miss<3))
+			{
+				lastx = x;
+				lasty = Camera::HEIGHT;
+			}
+		}	
+   
 	return Point(lastx ,lasty);
 }
 
@@ -650,6 +699,20 @@ void GoalFinder::Process(Mat image, bool OppGoal)
 	Canny(th,edge,lowThreshold,lowThreshold*ratio,kernel_size);
     GaussianBlur( edge, edge, Size(5, 5), 3, 3);
     HoughLines(edge, lines, 1, CV_PI/180, 220, 0, 0 );
+    
+    //Test Garis Gawang
+    for( size_t i = 0; i < lines.size(); i++ )
+    {
+        rho = lines[i][0]; theta = lines[i][1];//radian
+        double a = cos(theta), b = sin(theta);
+        double x0 = a*rho, y0 = b*rho;
+        pt1.x = cvRound(x0 + 1000*(-b));
+        pt1.y = cvRound(y0 + 1000*(a));
+        pt2.x = cvRound(x0 - 1000*(-b));
+        pt2.y = cvRound(y0 - 1000*(a));
+        line(image, pt1, pt2, Scalar(0,0,255), 1, CV_AA);
+    }
+
     ClassifyLineHV();
     if(ValidateV())
     {
@@ -666,10 +729,10 @@ void GoalFinder::Process(Mat image, bool OppGoal)
                 CalculateMeanRL();
                 RightUpperPost = CalculateIntersection(r_mean_h,teta_mean_h,r_mean_right,teta_mean_right);
                 LeftUpperPost = CalculateIntersection(r_mean_h,teta_mean_h,r_mean_left,teta_mean_left);
-                RightFoot = RunDown(th, RightUpperPost, teta_mean_right, 1);
-                LeftFoot = RunDown(th, LeftUpperPost, teta_mean_left, 1);
+                RightFoot = RunDownC2P(th, RightUpperPost, teta_mean_right, 1);
+                LeftFoot = RunDownC2P(th, LeftUpperPost, teta_mean_left, 1);
                 //CalculateGoalSlope();
-                //CalculateGoalDistance();
+                CalculateGoalDistance();
                 Status = BOTH_POST;
                 DrawLine(image, r_mean_h, DegreesToRadians(teta_mean_h));
                 DrawLine(image, r_mean_right, DegreesToRadians(teta_mean_right));
@@ -678,6 +741,10 @@ void GoalFinder::Process(Mat image, bool OppGoal)
                 circle(image, LeftUpperPost, 5, Scalar(0,255,255), 5, 8, 0 );
                 circle(image, RightFoot, 5, Scalar(0,255,255), 5, 8, 0);
                 circle(image, LeftFoot, 5, Scalar(0,255,255), 5, 8, 0);
+                cout << "Dua Tiang Terlihat" << endl;
+                cout << "Banyak Garis Horizontal = " << horizontal.size() << endl;
+                cout << "Banyak Garis Vertikal = " << vertical.size() << endl;
+                //Reset();
                 break;
 
         case C1P:
@@ -686,32 +753,46 @@ void GoalFinder::Process(Mat image, bool OppGoal)
                 tempP = CalculateIntersection(r_mean_h,teta_mean_h,r_mean_v,teta_mean_v);
                 if(RunRight(th, tempP, teta_mean_h, 1).x >= (tempP.x+50))
                 {
-                    DrawLine(image, r_mean_left, DegreesToRadians(teta_mean_left));
+                    //DrawLine(image, r_mean_left, DegreesToRadians(teta_mean_left));
 					Status = LEFT_POST;
 					LeftUpperPost = tempP;
-                    LeftFoot = RunDown(th, LeftUpperPost, teta_mean_left, 1);
+                    LeftFoot = RunDownC1P(th, LeftUpperPost, teta_mean_left, 1);
                     circle(image, LeftUpperPost, 5, Scalar(0,255,255), 5, 8, 0 );
                     circle(image, LeftFoot, 5, Scalar(0,255,255), 5, 8, 0);
+                    LeftUpperPost.y = 0;
+                    LeftFoot.y = Camera::HEIGHT; 
+                    line(image, LeftUpperPost, LeftFoot, Scalar(0,0,0), 3, CV_AA);
+                    cout << "Tiang Kiri Terlihat" << endl;
+                    cout << "Banyak Garis Horizontal = " << horizontal.size() << endl;
+                    cout << "Banyak Garis Vertikal = " << vertical.size() << endl;
 				}
                 else if(RunLeft(th, tempP, teta_mean_h, 1).x <= (tempP.x-50))
                 {
-                    DrawLine(image, r_mean_right, DegreesToRadians(teta_mean_right));
+                    //DrawLine(image, r_mean_right, DegreesToRadians(teta_mean_right));
                 	Status = RIGHT_POST;
 					RightUpperPost = tempP;
-                    RightFoot = RunDown(th, RightUpperPost, teta_mean_right, 1);
+                    RightFoot = RunDownC1P(th, RightUpperPost, teta_mean_right, 1);
                     circle(image, RightUpperPost, 5, Scalar(0,255,255), 5, 8, 0 );
                     circle(image, RightFoot, 5, Scalar(0,255,255), 5, 8, 0);
+                    RightUpperPost.y = 0;
+                    RightFoot.y = Camera::HEIGHT;
+                    line(image, RightUpperPost, RightFoot, Scalar(0,0,0), 3, CV_AA);
+                    cout << "Tiang Kanan Terlihat" << endl;
+                    cout << "Banyak Garis Horizontal = " << horizontal.size() << endl;
+                    cout << "Banyak Garis Vertikal = " << vertical.size() << endl;
 				}
                 else
 				{
 						Status = UNKNOWN_POST;
-				}                
+				}       
+                //Reset();         
 				break;
 
         case CO :
                 CalculateMeanH();
                 DrawLine(image, r_mean_h, DegreesToRadians(teta_mean_h));
                 Status = NONE;
+                //Reset();
                 break;
 
         case NC2P :
@@ -721,18 +802,21 @@ void GoalFinder::Process(Mat image, bool OppGoal)
                 DrawLine(image, r_mean_left, DegreesToRadians(teta_mean_left)); 
                 RightUpperPost = CalculateIntersection(0,90,r_mean_right,teta_mean_right);
                 LeftUpperPost = CalculateIntersection(0,90,r_mean_left,teta_mean_left);
-                RightFoot = RunDown(th, RightUpperPost, teta_mean_right, 1);
-                LeftFoot = RunDown(th, LeftUpperPost, teta_mean_left, 1);
+                RightFoot = RunDownC2P(th, RightUpperPost, teta_mean_right, 1);
+                LeftFoot = RunDownC2P(th, LeftUpperPost, teta_mean_left, 1);
                 //CalculateGoalSlope();
                 //CalculateGoalDistance();
-                Status = BOTH_POST;                
+                Status = BOTH_POST;
+                //Reset();                
                 break;
 
         case NC1P :
                 tempP = CalculateIntersection(0,90,r_mean_v,teta_mean_v);
-				LeftFoot = RunDown(th, tempP, teta_mean_v, 1);
+                DrawLine(image, r_mean_v, DegreesToRadians(teta_mean_v));
+				LeftFoot = RunDownC1P(th, tempP, teta_mean_v, 1);
 				RightFoot = LeftFoot;
                 Status = UNKNOWN_POST;
+                //Reset();
                 break;
 
         case NL :
@@ -741,4 +825,5 @@ void GoalFinder::Process(Mat image, bool OppGoal)
     }
     namedWindow("Image", CV_WINDOW_NORMAL);
 	imshow( "Image", image );
+    Reset();
 }

@@ -352,12 +352,20 @@ void GoalFinder::StateCheck()
 void GoalFinder::CalculateGoalSlope()
 {
     goalslope = atan((RightFoot.y - LeftFoot.y)/(RightFoot.x - LeftFoot.x)) * 180 / PI ;
+    cout << "Goal Slope = " << goalslope << endl;
 }
 
 void GoalFinder::CalculateGoalDistance()
 {
-    goaldistance = 300 * GoalWidth / abs(RightFoot.x - LeftFoot.x);
-    //cout << "GoalDistance = " << goaldistance << endl;
+    //int focal = abs(RightFoot.x - LeftFoot.x) * 220 / GoalWidth; //Dimensi dalam cmm
+    int focal = /*Nilai focal length untuk camera Al */570; //Ini adalah variabel focal length untuk gawang, setiap robot mempunyai nilai focal length yang berbeda
+    
+    goaldistance = focal * GoalWidth / abs(RightFoot.x - LeftFoot.x);
+    cout << "RightFoot.x = " << RightFoot.x << endl;
+    cout << "LeftFoot.x = " << LeftFoot.x << endl;
+    //cout << "Goal Width = " << GoalWidth << endl;
+    //cout << "Focal Length = " << focal << endl;
+    cout << "GoalDistance = " << goaldistance << endl;
 }
 
 Point GoalFinder::CalculateIntersection(int R1, int Teta1, int R2, int Teta2)

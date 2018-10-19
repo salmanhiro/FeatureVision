@@ -221,7 +221,7 @@ void GoalFinder::ClassifyLineHV() //theta dalam degree
     }
 }
 
-void GoalFinder::CalculateMeanH()
+void GoalFinder::CalculateMeanH() //hitung mean garis horizontal
 {
     int r_sum = 0;
     float teta_sum_sin = 0;
@@ -236,7 +236,7 @@ void GoalFinder::CalculateMeanH()
     teta_mean_h = atan2(teta_sum_sin/2,teta_sum_cos/2)/PI*180;
 }
 
-void GoalFinder::CalculateMeanV()
+void GoalFinder::CalculateMeanV() //hitung mean vertikal
 {
     int r_sum = 0;
     float teta_sum_sin = 0;
